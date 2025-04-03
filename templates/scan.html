@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5>Scan QR Code</h5>
+            </div>
+            <div class="card-body">
+                <div id="qr-reader" style="width: 100%"></div>
+                <form id="attendance-form" method="POST" style="display: none;">
+                    <input type="hidden" name="student_id" id="student-id-input">
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5>Instructions</h5>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li>Allow camera access when prompted</li>
+                    <li>Position the QR code in front of the camera</li>
+                    <li>System will automatically record attendance</li>
+                </ol>
+                <div class="alert alert-info">
+                    Note: Each student can only scan once per day.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+<script>
+    function onScanSuccess(decodedText) {
+        document.getElementById('student-id-input').value = decodedText;
+        document.getElementById('attendance-form').submit();
+    }
+
+    const html5QrCode = new Html5Qrcode("qr-reader");
+    const config = { fps: 10, qrbox: 250 };
+
+    html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        onScanSuccess
+    ).catch(err => {
+        console.error("Error starting scanner:", err);
+    });
+</script>
+{% endblock %}
