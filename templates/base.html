@@ -10,12 +10,25 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="/">Attendance Tracker</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="/">Dashboard</a>
-                <a class="nav-link" href="/add_student">Add Student</a>
-                <a class="nav-link" href="/scan">Scan QR</a>
-                <a class="nav-link" href="/attendance">Attendance</a>
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Attendance Tracker</a> {# Good practice to use url_for here too #}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a> {# Use url_for for consistency #}
+                    <a class="nav-link" href="{{ url_for('add_student') }}">Add Student</a> {# Use url_for #}
+                    <a class="nav-link" href="{{ url_for('scan') }}">Scan QR</a> {# Use url_for #}
+                    <a class="nav-link" href="{{ url_for('attendance') }}">Attendance</a> {# Use url_for #}
+                    
+                    {# ---- Add this line for the Student Login link ---- #}
+                    <a class="nav-link" href="{{ url_for('login') }}">Student Login</a> 
+                    {# ---- End of added line ---- #}
+                </div>
+                {# Optional: Add links to the right side if needed #}
+                {# <div class="navbar-nav ms-auto"> #}
+                {#    <a class="nav-link" href="#">Another Link</a> #}
+                {# </div> #}
             </div>
         </div>
     </nav>

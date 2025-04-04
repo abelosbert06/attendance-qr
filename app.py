@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import qrcode
 from io import BytesIO
@@ -23,19 +24,30 @@ def init_db():
             name TEXT NOT NULL,
             email TEXT,
             course TEXT,
-            qr_code TEXT
+            qr_code TEXT,
+            password_hash TEXT NOT NULL  -- Add this line
         )
     ''')
     conn.execute('''
         CREATE TABLE IF NOT EXISTS attendance (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            student_id INTEGER NOT NULL,
+            student_id INTEGER NOT NULL, -- Changed from INTEGER to TEXT to match student_id type? Check consistency.
             date TEXT NOT NULL,
             time_in TEXT NOT NULL,
             status TEXT DEFAULT 'Present',
-            FOREIGN KEY (student_id) REFERENCES students (id)
+            FOREIGN KEY (student_id) REFERENCES students (id) -- Consider if Foreign Key should reference student_id (TEXT) or id (INTEGER)
         )
     ''')
+    # Optional: If the table already exists, you might need to alter it
+    try:
+        conn.execute('ALTER TABLE students ADD COLUMN password_hash TEXT')
+        print("Added password_hash column to students table.")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            pass # Column already exists, ignore error
+        else:
+            raise e # Raise other operational errors
+            
     conn.commit()
     conn.close()
 
@@ -79,27 +91,47 @@ def add_student():
         name = request.form['name']
         email = request.form['email']
         course = request.form['course']
-        
+        password = request.form['password'] # Get password from form
+
+        # --- Input Validation (Basic Example) ---
+        if not password:
+             flash('Password cannot be empty!', 'danger')
+             return redirect(url_for('add_student'))
+        if len(password) < 6: # Example minimum length
+             flash('Password must be at least 6 characters long.', 'danger')
+             return redirect(url_for('add_student'))
+        # --- End Validation ---
+
         conn = get_db_connection()
         existing = conn.execute('SELECT 1 FROM students WHERE student_id = ?', (student_id,)).fetchone()
         if existing:
             flash('Student ID already exists!', 'danger')
             conn.close()
-            return redirect(url_for('add_student'))
+            # Make sure to render the template again, potentially passing back other entered values
+            return render_template('add_student.html') 
+
+        # Hash the password before storing
+        hashed_password = generate_password_hash(password)
         
-        qr_code = generate_qr_code(student_id)
+        qr_code = generate_qr_code(student_id) # Assumes generate_qr_code function exists
         
-        conn.execute('''
-            INSERT INTO students (student_id, name, email, course, qr_code)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (student_id, name, email, course, qr_code))
-        conn.commit()
-        conn.close()
-        
-        flash('Student added successfully!', 'success')
+        try:
+            conn.execute('''
+                INSERT INTO students (student_id, name, email, course, qr_code, password_hash)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (student_id, name, email, course, qr_code, hashed_password)) # Add hashed_password
+            conn.commit()
+            flash('Student added successfully!', 'success')
+        except sqlite3.Error as e:
+            flash(f'Database error: {e}', 'danger')
+            conn.rollback() # Roll back changes on error
+        finally:
+            conn.close()
+            
         return redirect(url_for('dashboard'))
     
-    return render_template('add_student.html')
+    # For GET request
+    return render_template('add_student.html') # Render the add student form
 
 @app.route('/scan', methods=['GET', 'POST'])
 def scan():
@@ -148,6 +180,32 @@ def attendance():
     ''').fetchall()
     conn.close()
     return render_template('attendance.html', records=records)
+
+@app.route('/login', methods=['GET', 'POST']) 
+def login(): 
+    if request.method == 'POST':
+        student_id_attempt = request.form['student_id']
+        password_attempt = request.form['password'] 
+
+        if not student_id_attempt or not password_attempt:
+            flash('Please enter both Student ID and Password.', 'warning')
+            return redirect(url_for('login'))
+
+        conn = get_db_connection()
+        student = conn.execute('SELECT * FROM students WHERE student_id = ?', 
+                               (student_id_attempt,)).fetchone()
+        conn.close()
+
+        if student and check_password_hash(student['password_hash'], password_attempt):
+            flash('Login successful!', 'success')
+            # Optional: Use session here later
+            return redirect(url_for('view_student', student_id=student['student_id']))
+        else:
+            flash('Invalid Student ID or Password.', 'danger') 
+            return redirect(url_for('login')) 
+
+    # For GET request
+    return render_template('login.html')
 
 @app.route('/student/<student_id>')
 def view_student(student_id):
