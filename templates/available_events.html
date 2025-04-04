@@ -4,28 +4,37 @@
 <h2>Available Events</h2>
 <p>Here you can register or unregister for events.</p>
 
+{
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <div class="list-group mb-4">
-    {% if events %}
+    {% if events and events | length > 0 %} 
         {% for event in events %}
         <div class="list-group-item list-group-item-action d-md-flex justify-content-between align-items-center">
-            {# Event Details #}
             <div class="mb-2 mb-md-0">
                 <h5 class="mb-1">{{ event['name'] }}</h5>
                 <p class="mb-1"><strong>Date:</strong> {{ event['event_date'] }}</p>
                 <small class="text-muted">{{ event['description'] | default('No description available.', true) }}</small>
             </div>
-            {# Action Button/Badge #}
             <div class="ms-md-3 flex-shrink-0 text-center">
-                {# Check if the student is registered using the registered_ids set #}
                 {% if event['event_id'] in registered_ids %}
-                    {# Already registered - Show Unregister button #}
-                    <form action="{{ url_for('unregister_action', event_id=event['event_id']) }}" method="POST" class="d-inline">
+                    {# Use student blueprint for unregister action #}
+                    <form action="{{ url_for('student.unregister_action', event_id=event['event_id']) }}" method="POST" class="d-inline"> 
                         <button type="submit" class="btn btn-danger btn-sm mb-1">Unregister</button>
                     </form>
                     <br><span class="badge bg-success rounded-pill">Registered</span>
                 {% else %}
-                    {# Not registered - Show Register button #}
-                     <form action="{{ url_for('register_action', event_id=event['event_id']) }}" method="POST" class="d-inline">
+                     {# Use student blueprint for register action #}
+                     <form action="{{ url_for('student.register_action', event_id=event['event_id']) }}" method="POST" class="d-inline"> 
                         <button type="submit" class="btn btn-primary btn-sm">Register</button>
                     </form>
                 {% endif %}
@@ -33,12 +42,13 @@
         </div>
         {% endfor %}
     {% else %}
-        <div class="alert alert-info">No events available at the moment.</div>
+        <div class="alert alert-info">No events available at the moment. Please check back later or contact an administrator if you believe this is an error.</div>
     {% endif %}
 </div>
 
 <div>
-    <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">&laquo; Back to Dashboard</a>
+     {# Use student blueprint for dashboard link #}
+    <a href="{{ url_for('student.student_dashboard') }}" class="btn btn-secondary">&laquo; Back to Dashboard</a>
 </div>
 
 {% endblock %}

@@ -3,6 +3,18 @@
 {% block content %}
 <h2>Scan Attendance QR Code</h2>
 
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 <div class="row">
     {# Scanner & Form Column #}
     <div class="col-md-7">
@@ -11,42 +23,29 @@
                 <h5>Scan QR Code</h5>
             </div>
             <div class="card-body">
-                {# --- FORM containing both Event Selection and QR Reader --- #}
-                <form id="attendance-form" method="POST" action="{{ url_for('scan') }}">
-                    
-                    {# --- Event Selection Dropdown --- #}
+                 {# Use admin blueprint for scan action #}
+                <form id="attendance-form" method="POST" action="{{ url_for('admin.scan') }}">
                     <div class="mb-3">
                         <label for="event-select" class="form-label"><strong>Select Active Event:</strong> <span class="text-danger">*</span></label>
                         <select class="form-select" id="event-select" name="active_event_id" required>
                             <option value="" selected disabled>-- Please choose an event --</option>
-                            {# Populate options from events passed by app.py #}
                             {% for event in events %}
                                 <option value="{{ event['event_id'] }}">{{ event['name'] }} ({{ event['event_date'] }})</option>
                             {% endfor %}
                         </select>
-                         {# Display message if no events exist #}
                          {% if not events %}
                              <div class="alert alert-warning mt-2">No events found. Please create an event first via "Manage Events".</div>
                          {% endif %}
                     </div>
-                    {# --- End Event Selection --- #}
-
-                    {# Hidden input for the scanned student ID #}
+                    
                     <input type="hidden" name="student_id" id="student-id-input">
 
-                    {# QR Code Reader Area #}
                     <div class="mb-3">
                          <label class="form-label"><strong>Scan QR Code Below:</strong></label>
-                         {# Disable scanning if no events are available #}
                         <div id="qr-reader" style="width: 100%; border: 1px solid #ccc; {% if not events %}opacity: 0.5; pointer-events: none;{% endif %}"></div>
-                        <div id="qr-reader-results" class="mt-2"></div> {# Optional: display decoded text #}
+                        <div id="qr-reader-results" class="mt-2"></div> 
                     </div>
-
-                    {# Submit button (optional, JS submits automatically) #}
-                    {# <button type="submit" class="btn btn-primary">Submit Manually (if needed)</button> #}
-                    
                 </form>
-                 {# --- END FORM --- #}
             </div>
         </div>
     </div>
@@ -74,88 +73,41 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-{# Only load/run scanner JS if events exist #}
-{% if events %} 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script> {# Use a specific version #}
-<script>
-    function onScanSuccess(decodedText, decodedResult) {
-        // Handle the scanned code:
-        console.log(`Code matched = ${decodedText}`, decodedResult);
 
-        // Find the form and the hidden input
+{% block scripts %}
+{% if events %} 
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script> 
+<script>
+    // --- SAME JAVASCRIPT AS PROVIDED BEFORE ---
+    function onScanSuccess(decodedText, decodedResult) {
+        console.log(`Code matched = ${decodedText}`, decodedResult);
         const form = document.getElementById('attendance-form');
         const studentIdInput = document.getElementById('student-id-input');
         const eventSelect = document.getElementById('event-select');
-        
-        // Optional: Add visual feedback
         const resultsDiv = document.getElementById('qr-reader-results');
-        if(resultsDiv) {
-           resultsDiv.innerHTML = `<span class="text-success">Scanned: ${decodedText}. Submitting...</span>`;
-        }
-
-        // Check if an event is selected
+        if(resultsDiv) resultsDiv.innerHTML = `<span class="text-success">Scanned: ${decodedText}. Submitting...</span>`;
         if (!eventSelect.value) {
-             if(resultsDiv) {
-                 resultsDiv.innerHTML = `<span class="text-danger">ERROR: Please select an event before scanning!</span>`;
-             } else {
-                 alert("ERROR: Please select an event before scanning!");
-             }
-             // Optionally stop the scanner here if needed, or just prevent submission
-             // html5QrCode.stop(); 
-             return; // Stop processing
+             if(resultsDiv) resultsDiv.innerHTML = `<span class="text-danger">ERROR: Please select an event before scanning!</span>`;
+             else alert("ERROR: Please select an event before scanning!");
+             return; 
         }
-
-        // Populate the hidden student ID field
-        if (studentIdInput) {
-            studentIdInput.value = decodedText;
-        } else {
-            console.error("Student ID input field not found!");
-            return; // Stop if field is missing
-        }
-
-        // Submit the form (which now includes selected event_id and student_id)
-        if (form) {
-            form.submit();
-        } else {
-            console.error("Attendance form not found!");
-        }
+        if (studentIdInput) studentIdInput.value = decodedText;
+        else { console.error("Student ID input field not found!"); return; }
+        if (form) form.submit();
+        else console.error("Attendance form not found!");
     }
-
-    function onScanFailure(error) {
-        // handle scan failure, usually better to ignore and keep scanning.
-        // console.warn(`Code scan error = ${error}`);
-    }
-
-    // Ensure the qr-reader div exists before initializing
+    function onScanFailure(error) { /* console.warn(`Code scan error = ${error}`); */ }
     const qrReaderElement = document.getElementById("qr-reader");
     if (qrReaderElement) {
         const html5QrCode = new Html5Qrcode("qr-reader");
-        const config = { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 }, // Recommended way to define qrbox
-            // Remember to ask for permissions first using Html5Qrcode.getCameras()
-            // if you want a camera selection feature.
-            // This example uses the default environment-facing camera directly.
-        };
-
-        // Start scanning.
-        html5QrCode.start(
-            { facingMode: "environment" }, // Or { deviceId: { exact: camera arrière ID } }
-            config,
-            onScanSuccess,
-            onScanFailure
-        ).catch(err => {
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, onScanFailure)
+        .catch(err => {
             console.error("Unable to start scanning.", err);
             const resultsDiv = document.getElementById('qr-reader-results');
-             if(resultsDiv) {
-                 resultsDiv.innerHTML = `<span class="text-danger">ERROR: Could not start camera. ${err}</span>`;
-             }
+             if(resultsDiv) resultsDiv.innerHTML = `<span class="text-danger">ERROR: Could not start camera. ${err}</span>`;
         });
-    } else {
-         console.error("QR Reader element not found in the DOM.");
-    }
-
+    } else { console.error("QR Reader element not found in the DOM."); }
 </script>
-{% endif %} {# End check for events #}
+{% endif %}
 {% endblock %}

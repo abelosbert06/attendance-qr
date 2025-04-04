@@ -8,7 +8,8 @@
                 <h4>Student Login</h4>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('login') }}">
+                {# Ensure form action points to the auth blueprint login #}
+                <form method="POST" action="{{ url_for('auth.login') }}"> 
                     <div class="mb-3">
                         <label for="student_id" class="form-label">Student ID</label>
                         <input type="text" class="form-control" id="student_id" name="student_id" required>
@@ -21,7 +22,8 @@
                 </form>
                 <hr>
                 <p class="text-center mb-0">
-                    Don't have an account? <a href="{{ url_for('signup') }}">Sign Up Here</a>
+                    {# Ensure link points to the auth blueprint signup #}
+                    Don't have an account? <a href="{{ url_for('auth.signup') }}">Sign Up Here</a> 
                 </p>
             </div>
         </div>

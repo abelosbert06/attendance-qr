@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{# Welcome message - uses 'logged_in_user' injected by context_processor #}
+{# Use the variable injected by the context processor #}
 <h2>Welcome, {{ logged_in_user.name if logged_in_user else 'Student' }}!</h2> 
 
 <div class="row">
@@ -36,17 +36,12 @@
             </div>
             <div class="card-body">
                 <p>View and register for available events using the button below.</p>
-                <a href="{{ url_for('list_available_events') }}" class="btn btn-primary mb-3">View & Register for Events</a>
-                
-                {# Placeholder for displaying student's registered events #}
-                {# <h5 class="mt-4">My Registered Events</h5> #}
-                {# <p>Logic to list registered events will go here later.</p> #}
-                {# Add other student-specific links here later if needed #}
-                {# <a href="#" class="btn btn-secondary">View My Attendance</a> #}
-                {# <a href="#" class="btn btn-warning">Update Profile</a> #}
+                {# Use student blueprint for event listing #}
+                <a href="{{ url_for('student.list_available_events') }}" class="btn btn-primary mb-3">View & Register for Events</a> 
                 
                 <hr>
-                <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                {# Use auth blueprint for logout #}
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">Logout</a> 
             </div>
         </div>
     </div>

@@ -9,11 +9,11 @@
                 <h5>Quick Actions</h5>
             </div>
             <div class="card-body">
-                 {# Use url_for for consistency #}
-                <a href="{{ url_for('add_student') }}" class="btn btn-success">Add Student (Admin)</a>
-                <a href="{{ url_for('manage_events') }}" class="btn btn-warning">Manage Events</a>
-                <a href="{{ url_for('scan') }}" class="btn btn-info">Scan QR Code</a>
-                <a href="{{ url_for('attendance') }}" class="btn btn-primary">View All Attendance</a>
+                 {# Use admin blueprint for links #}
+                <a href="{{ url_for('admin.add_student') }}" class="btn btn-success">Add Student (Admin)</a>
+                <a href="{{ url_for('admin.manage_events') }}" class="btn btn-warning">Manage Events</a>
+                <a href="{{ url_for('admin.scan') }}" class="btn btn-info">Scan QR Code</a>
+                <a href="{{ url_for('admin.attendance') }}" class="btn btn-primary">View All Attendance</a>
             </div>
         </div>
     </div>
@@ -24,7 +24,7 @@
             </div>
             <div class="card-body">
                 <p>Total Students Registered: {{ students_count | default('N/A') }}</p>
-                {# This count is simplistic - doesn't account for specific events yet #}
+                <p>Total Events Created: {{ events_count | default('N/A') }}</p> 
                 <p>Today's Scans (All Events): {{ todays_attendance_count | default('N/A') }}</p> 
             </div>
         </div>
@@ -45,7 +45,7 @@
                         <th>Time</th>
                         <th>Student ID</th>
                         <th>Name</th>
-                        <th>Event</th> {# Added Event column #}
+                        <th>Event</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -56,7 +56,7 @@
                         <td>{{ record['time_in'] }}</td>
                         <td>{{ record['student_id'] }}</td>
                         <td>{{ record['name'] }}</td>
-                        <td>{{ record['event_name'] | default('N/A') }}</td> {# Display event name #}
+                        <td>{{ record['event_name'] | default('N/A') }}</td>
                         <td><span class="badge bg-success">{{ record['status'] }}</span></td>
                     </tr>
                     {% endfor %}
