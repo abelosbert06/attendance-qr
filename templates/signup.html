@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+             <div class="card-header bg-success text-white">
+                <h4>Create Student Account</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('signup') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="student_id" class="form-label">Student ID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="student_id" name="student_id" value="{{ student_id or '' }}" required>
+                            <div class="form-text">This will be your unique login ID.</div>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ name or '' }}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                         <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email (Optional)</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="course" class="form-label">Course (Optional)</label>
+                            <input type="text" class="form-control" id="course" name="course" value="{{ course or '' }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                             <div class="form-text">Must be at least 6 characters long.</div>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100">Sign Up</button>
+                </form>
+                <hr>
+                <p class="text-center mb-0">
+                    Already have an account? <a href="{{ url_for('login') }}">Log In</a>
+                </p>
+             </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-warning text-dark">
+        <h5>Add New Student (Admin)</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('add_student') }}">
+             <div class="mb-3">
+                <label for="student_id" class="form-label">Student ID <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="student_id" name="student_id" value="{{ student_id or '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ name or '' }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ email or '' }}">
+            </div>
+            <div class="mb-3">
+                <label for="course" class="form-label">Course</label>
+                <input type="text" class="form-control" id="course" name="course" value="{{ course or '' }}">
+            </div>
+            {# --- Added Password Field --- #}
+            <div class="mb-3">
+                <label for="password" class="form-label">Set Password <span class="text-danger">*</span></label>
+                <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                <div class="form-text">Minimum 6 characters.</div>
+            </div>
+            {# --- End Added Field --- #}
+            <button type="submit" class="btn btn-warning">Add Student (Admin)</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+{# Welcome message - uses 'logged_in_user' injected by context_processor #}
+<h2>Welcome, {{ logged_in_user.name if logged_in_user else 'Student' }}!</h2> 
+
+<div class="row">
+    {# Student Info & QR Code Column #}
+    <div class="col-lg-4 col-md-5 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                Your Information & QR Code
+            </div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                {% if student and student['qr_code'] %}
+                    <img src="data:image/png;base64,{{ student['qr_code'] }}" 
+                         alt="Your QR Code" class="img-fluid mb-3 mx-auto" style="max-width: 200px; display: block;">
+                    <p class="mt-auto"><button onclick="window.print()" class="btn btn-sm btn-secondary">Print QR Code</button></p>
+                {% else %}
+                    <p class="text-danger">QR Code not available.</p>
+                {% endif %}
+                <hr>
+                <p class="mb-1 text-start"><strong>Name:</strong> {{ student['name'] }}</p>
+                <p class="mb-1 text-start"><strong>ID:</strong> {{ student['student_id'] }}</p>
+                <p class="mb-1 text-start"><strong>Course:</strong> {{ student['course'] if student['course'] else 'N/A' }}</p>
+                <p class="mb-1 text-start"><strong>Email:</strong> {{ student['email'] if student['email'] else 'N/A' }}</p>
+            </div>
+        </div>
+    </div>
+
+    {# Actions & Links Column #}
+    <div class="col-lg-8 col-md-7 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                Actions & Event Registration
+            </div>
+            <div class="card-body">
+                <p>View and register for available events using the button below.</p>
+                <a href="{{ url_for('list_available_events') }}" class="btn btn-primary mb-3">View & Register for Events</a>
+                
+                {# Placeholder for displaying student's registered events #}
+                {# <h5 class="mt-4">My Registered Events</h5> #}
+                {# <p>Logic to list registered events will go here later.</p> #}
+                {# Add other student-specific links here later if needed #}
+                {# <a href="#" class="btn btn-secondary">View My Attendance</a> #}
+                {# <a href="#" class="btn btn-warning">Update Profile</a> #}
+                
+                <hr>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
