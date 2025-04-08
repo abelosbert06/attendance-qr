@@ -3,11 +3,11 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card shadow"> {# Added shadow #}
              <div class="card-header bg-success text-white">
                 <h4>Create Student Account</h4>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4"> {# Added padding #}
                 {# Display flashed messages #}
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -20,7 +20,7 @@
                     {% endif %}
                 {% endwith %}
 
-                {# Ensure form action points to the auth blueprint signup #}
+                {# Signup Form - Points to auth.signup #}
                 <form method="POST" action="{{ url_for('auth.signup') }}"> 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -54,12 +54,28 @@
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                         </div>
                     </div>
+
+                    {# CAPTCHA Section #}
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-6">
+                             {# Image - Uses auth.captcha_image route, refresh via timestamp #}
+                            <img src="{{ url_for('auth.captcha_image') }}?t={{ range(1, 10000) | random }}" 
+                                 alt="CAPTCHA Image" 
+                                 id="captcha-img"
+                                 style="border:1px solid #ccc; vertical-align: middle;">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="captcha_input" class="form-label">Enter Code<span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="captcha_input" name="captcha_input" required autocomplete="off" maxlength="6">
+                        </div>
+                    </div>
+                    {# End CAPTCHA Section #}
                     
-                    <button type="submit" class="btn btn-success w-100">Sign Up</button>
+                    <button type="submit" class="btn btn-success w-100 btn-lg">Sign Up</button> {# Larger button #}
                 </form>
                 <hr>
                 <p class="text-center mb-0">
-                    {# Ensure link points to the auth blueprint login #}
+                     {# Link points to auth.login #}
                     Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a> 
                 </p>
              </div>

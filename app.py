@@ -1,6 +1,9 @@
 # qr-code-project/app.py
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session, Blueprint
+import random
+import string
+from PIL import Image, ImageDraw, ImageFont 
+from flask import Flask, render_template, request, redirect, url_for, flash, session, Blueprint, send_file, make_response 
 import sqlite3
 import qrcode
 from io import BytesIO
@@ -12,6 +15,98 @@ from functools import wraps # Needed for decorators
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-key-change-in-prod') # Use env var or default
+
+# == Captcha ==
+def generate_captcha_text(length=6):
+    #Generates a random alphanumeric string for CAPTCHA.
+    characters = string.ascii_uppercase + string.digits
+    return ''.join(random.choices(characters, k=length))
+
+FONT_PATH_PLACEHOLDER = 'static/fonts/BebasNeue.otf'
+
+def generate_captcha_image(text):
+    """Generates a PNG image of the CAPTCHA text."""
+    try:
+        # Verify font path exists
+        font_path = FONT_PATH_PLACEHOLDER 
+        if not os.path.exists(font_path):
+             # Fallback if font not found - creates a basic error image
+             print(f"ERROR: CAPTCHA font not found at {font_path}. Using fallback.")
+             img = Image.new('RGB', (200, 50), color = (210, 210, 210))
+             d = ImageDraw.Draw(img)
+             d.text((10,10), "Font Not Found", fill=(255,0,0))
+             font_path = None # Prevent further errors
+        else:
+            font = ImageFont.truetype(font_path, 36) # Load font
+            
+            # Determine text size to create appropriate image size
+            # Use textbbox for more accurate size in newer Pillow versions
+            try:
+                text_bbox = ImageDraw.Draw(Image.new('RGB',(1,1))).textbbox((0, 0), text, font=font)
+                text_width = text_bbox[2] - text_bbox[0]
+                text_height = text_bbox[3] - text_bbox[1]
+                width = text_width + 40 # Add padding
+                height = text_height + 20 # Add padding
+            except AttributeError: # Fallback for older Pillow
+                 text_width, text_height = ImageDraw.Draw(Image.new('RGB',(1,1))).textsize(text, font=font)
+                 width = text_width + 40 # Add padding
+                 height = text_height + 20 # Add padding
+
+
+            img = Image.new('RGB', (width, height), color = (240, 240, 240)) # Light background
+            d = ImageDraw.Draw(img)
+
+            # Draw text with slight offset
+            d.text((20, 10), text, font=font, fill=(50, 50, 50)) # Dark grey text
+
+            # Add some simple noise/lines (optional, very basic anti-bot)
+            for _ in range(random.randint(3, 6)): # Draw 3 to 6 lines
+                x1, y1 = random.randint(0, width), random.randint(0, height)
+                x2, y2 = random.randint(0, width), random.randint(0, height)
+                line_color = (random.randint(100, 200), random.randint(100, 200), random.randint(100, 200))
+                d.line([(x1, y1), (x2, y2)], fill=line_color, width=1)
+            # Add some random dots (pixels)
+            # for _ in range(100):
+            #    d.point((random.randint(0, width), random.randint(0, height)), fill=line_color)
+
+    except ImportError:
+         # Pillow might be missing ImageFont, create fallback image
+         print("ERROR: Pillow ImageFont not available. Using fallback.")
+         img = Image.new('RGB', (200, 50), color = (210, 210, 210))
+         d = ImageDraw.Draw(img)
+         d.text((10,10), "Pillow Error", fill=(255,0,0))
+
+    # Save image to an in-memory buffer
+    buf = BytesIO()
+    img.save(buf, 'PNG')
+    buf.seek(0)
+    return buf
+
+# === Blueprint Definitions ===
+auth_bp = Blueprint('auth', __name__) # For login, logout, signup
+student_bp = Blueprint('student', __name__, url_prefix='/student') # Student routes prefixed with /student
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin') # Admin routes prefixed with /admin
+
+# --- Add CAPTCHA Image Route (within Auth Blueprint) ---
+@auth_bp.route('/captcha_image')
+def captcha_image():
+    """Generates and serves the CAPTCHA image."""
+    # Generate random code
+    captcha_code = generate_captcha_text()
+    # Store it in session (case doesn't matter for check, but store original)
+    session['captcha_code'] = captcha_code
+    session.modified = True # Ensure session is saved
+
+    # Generate the image
+    image_buffer = generate_captcha_image(captcha_code)
+    
+    # Serve the image
+    response = make_response(send_file(image_buffer, mimetype='image/png'))
+    # Prevent caching of the CAPTCHA image
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # --- Database Setup ---
 DATABASE = 'attendance.db'
@@ -139,25 +234,35 @@ def inject_user_status():
     return dict(logged_in_user=user_info, is_user_admin=is_admin) # Pass both to templates
 
 
-# === Blueprint Definitions ===
-auth_bp = Blueprint('auth', __name__) # For login, logout, signup
-student_bp = Blueprint('student', __name__, url_prefix='/student') # Student routes prefixed with /student
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin') # Admin routes prefixed with /admin
-
 # === Authentication Routes (Auth Blueprint) ===
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
-    """Handles student self-registration."""
     if request.method == 'POST':
-        student_id = request.form['student_id']
+        # --- Get CAPTCHA input FIRST ---
+        user_captcha = request.form.get('captcha_input')
+        correct_captcha = session.pop('captcha_code', None) # Get code AND remove from session
+
+        # --- Verify CAPTCHA ---
+        if not user_captcha or not correct_captcha or user_captcha.upper() != correct_captcha.upper():
+            flash('Incorrect CAPTCHA code. Please try again.', 'danger')
+            # Re-render form, passing back non-sensitive data
+            student_id = request.form.get('student_id','') # Use .get to avoid error if missing
+            name = request.form.get('name','')
+            email = request.form.get('email', '')
+            course = request.form.get('course', '')
+            # Don't pass passwords back to the template
+            return render_template('signup.html', student_id=student_id, name=name, email=email, course=course)
+        # --- End CAPTCHA Verification ---
+
+        # --- CAPTCHA passed, now get other form data ---
+        student_id = request.form['student_id'] # Can use [''] now as we expect them post-captcha
         name = request.form['name']
         email = request.form.get('email', '')
         course = request.form.get('course', '')
         password = request.form['password']
         confirm_password = request.form['confirm_password']
 
-        # Validation... (same as before)
         if not student_id or not name or not password or not confirm_password:
             flash('Please fill out all required fields.', 'danger')
             return render_template('signup.html', student_id=student_id, name=name, email=email, course=course)
@@ -179,7 +284,6 @@ def signup():
             hashed_password = generate_password_hash(password)
             qr_code = generate_qr_code(student_id) 
 
-            # Insert new student (default is_admin=0)
             cursor.execute('''
                 INSERT INTO students (student_id, name, email, course, qr_code, password_hash, is_admin)
                 VALUES (?, ?, ?, ?, ?, ?, 0) 
@@ -193,52 +297,75 @@ def signup():
             conn.rollback()
             return render_template('signup.html', student_id=student_id, name=name, email=email, course=course)
         finally:
-            conn.close()
+            # Ensure connection is closed even if checks fail early
+            if conn: 
+                conn.close()
+            
+    # GET Request
     return render_template('signup.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Handles user login and session creation (both students and admins)."""
-    session.clear() # Clear entire session on login attempt
-
+    # Don't clear session on GET, only on failed POST attempt or logout
+    
     if request.method == 'POST':
+         # --- Get CAPTCHA input FIRST ---
+        user_captcha = request.form.get('captcha_input')
+        correct_captcha = session.pop('captcha_code', None) # Get code AND remove from session
+
+         # --- Verify CAPTCHA ---
+        if not user_captcha or not correct_captcha or user_captcha.upper() != correct_captcha.upper():
+            flash('Incorrect CAPTCHA code. Please try again.', 'danger')
+            session.clear() # Clear session on failed CAPTCHA attempt for login
+            return redirect(url_for('auth.login'))
+        # --- End CAPTCHA Verification ---
+
+        # --- CAPTCHA passed, now get login credentials ---
         student_id_attempt = request.form['student_id']
         password_attempt = request.form['password'] 
 
         if not student_id_attempt or not password_attempt:
             flash('Please enter both Student ID and Password.', 'warning')
+         
             return redirect(url_for('auth.login'))
 
+        # --- Proceed with Database Check ---
         conn = get_db_connection()
+        user = None # Initialize user
         try:
-            # Fetch needed info including is_admin flag
             user = conn.execute('SELECT id, name, password_hash, is_admin FROM students WHERE student_id = ?', 
                                    (student_id_attempt,)).fetchone()
         except sqlite3.Error as e:
              flash(f"Database error during login: {e}", "danger")
-             user = None
         finally:
-            conn.close()
+            if conn:
+                conn.close()
 
+        # --- Check Credentials ---
         if user and user['password_hash'] and check_password_hash(user['password_hash'], password_attempt):
-            
-            # Store info in session
+            # --- Login Success ---
+            # Clear any old session data just in case before setting new keys
+            session.clear() 
             session['student_db_id'] = user['id'] 
             session['student_name'] = user['name']
-            session['is_admin'] = bool(user['is_admin']) # Store admin status as boolean
+            session['is_admin'] = bool(user['is_admin']) 
             session.permanent = True 
             
             flash(f"Welcome, {user['name']}!", 'success')
             
-            # Redirect admin users to admin dashboard, students to student dashboard
             if session['is_admin']:
                 return redirect(url_for('admin.dashboard')) 
             else:
                  return redirect(url_for('student.student_dashboard')) 
         else:
+            # --- Login Failed ---
+            session.clear() # Clear session on failed login attempt
             flash('Invalid Student ID or Password.', 'danger') 
             return redirect(url_for('auth.login')) 
 
+    # --- GET Request ---
+    # Clear any previous session data before showing login page
+    session.clear() 
     return render_template('login.html')
 
 @auth_bp.route('/logout')

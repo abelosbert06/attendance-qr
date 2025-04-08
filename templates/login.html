@@ -1,32 +1,68 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4>Student Login</h4>
-            </div>
-            <div class="card-body">
-                {# Ensure form action points to the auth blueprint login #}
-                <form method="POST" action="{{ url_for('auth.login') }}"> 
-                    <div class="mb-3">
-                        <label for="student_id" class="form-label">Student ID</label>
-                        <input type="text" class="form-control" id="student_id" name="student_id" required>
+<div class="d-flex align-items-center justify-content-center" style="min-height: 60vh;"> {# Reduced min-height slightly #}
+    
+    {# The card now only contains the login-specific elements #}
+    <div class="card shadow-lg" style="width: 100%; max-width: 450px;"> 
+        <div class="card-body p-4 p-md-5"> 
+
+            {# REMOVED Logo, College Name, Address from here #}
+
+            <h5 class="card-title text-center mb-4">Student Login</h5> {# Increased bottom margin #}
+            
+             {# Flash messages display #}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert"> 
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {# Login Form #}
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <div class="mb-3">
+                    <label for="student_id" class="form-label">Student ID</label>
+                    <input type="text" class="form-control" id="student_id" name="student_id" required placeholder="Enter your ID"> 
+                </div>
+                <div class="mb-3"> 
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required placeholder="Enter your password">
+                </div> 
+
+                {# CAPTCHA Section #}
+                <div class="row mb-4 align-items-center"> 
+                    <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                        <img src="{{ url_for('auth.captcha_image') }}?t={{ range(1, 10000) | random }}" 
+                             alt="CAPTCHA Image" 
+                             id="captcha-img"
+                             style="border:1px solid #ccc; vertical-align: middle; max-width: 100%;">
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div> 
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
-                </form>
-                <hr>
-                <p class="text-center mb-0">
-                    {# Ensure link points to the auth blueprint signup #}
+                    <div class="col-md-6">
+                        <label for="captcha_input" class="form-label">Enter Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="captcha_input" name="captcha_input" required autocomplete="off" maxlength="6">
+                    </div>
+                </div>
+                {# End CAPTCHA Section #}
+
+                <div class="d-grid gap-2"> 
+                     <button type="submit" class="btn btn-primary btn-lg">Login</button> 
+                </div>
+            </form>
+            
+            {# Signup Link #}
+            <div class="text-center mt-4"> 
+                <p class="mb-0">
                     Don't have an account? <a href="{{ url_for('auth.signup') }}">Sign Up Here</a> 
                 </p>
             </div>
-        </div>
-    </div>
-</div>
+
+        </div> {# End card-body #}
+    </div> {# End card #}
+
+</div> {# End centering container #}
 {% endblock %}
