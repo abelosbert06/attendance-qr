@@ -1,31 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-center" style="min-height: 60vh;"> {# Reduced min-height slightly #}
+{# This outer div centers the card #}
+<div class="d-flex align-items-center justify-content-center" style="min-height: 60vh;"> 
     
-    {# The card now only contains the login-specific elements #}
+    {# *** THIS IS THE LOGIN CARD THAT WAS LIKELY MISSING *** #}
     <div class="card shadow-lg" style="width: 100%; max-width: 450px;"> 
         <div class="card-body p-4 p-md-5"> 
 
-            {# REMOVED Logo, College Name, Address from here #}
+            {# Only includes login-specific title, messages, form, and signup link #}
 
-            <h5 class="card-title text-center mb-4">Student Login</h5> {# Increased bottom margin #}
-            
-             {# Flash messages display #}
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-dismissible fade show small" role="alert"> 
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+            <h5 class="card-title text-center mb-4">Student Login</h5> 
 
             {# Login Form #}
             <form method="POST" action="{{ url_for('auth.login') }}">
-                <div class="mb-3">
+                 <div class="mb-3">
                     <label for="student_id" class="form-label">Student ID</label>
                     <input type="text" class="form-control" id="student_id" name="student_id" required placeholder="Enter your ID"> 
                 </div>
@@ -37,10 +26,7 @@
                 {# CAPTCHA Section #}
                 <div class="row mb-4 align-items-center"> 
                     <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
-                        <img src="{{ url_for('auth.captcha_image') }}?t={{ range(1, 10000) | random }}" 
-                             alt="CAPTCHA Image" 
-                             id="captcha-img"
-                             style="border:1px solid #ccc; vertical-align: middle; max-width: 100%;">
+                        <img src="{{ url_for('auth.captcha_image') }}?t={{ range(1, 10000) | random }}" alt="CAPTCHA Image" id="captcha-img" style="border:1px solid #ccc; vertical-align: middle; max-width: 100%;">
                     </div>
                     <div class="col-md-6">
                         <label for="captcha_input" class="form-label">Enter Code <span class="text-danger">*</span></label>
@@ -48,7 +34,7 @@
                     </div>
                 </div>
                 {# End CAPTCHA Section #}
-
+                
                 <div class="d-grid gap-2"> 
                      <button type="submit" class="btn btn-primary btn-lg">Login</button> 
                 </div>
@@ -63,6 +49,7 @@
 
         </div> {# End card-body #}
     </div> {# End card #}
+    {# *** END OF LOGIN CARD *** #}
 
 </div> {# End centering container #}
 {% endblock %}

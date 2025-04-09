@@ -1,11 +1,32 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>Attendance Records (All Events)</h2>
-{# TODO: Add dropdowns/forms here later to filter by Event or Student #}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Attendance Records</h2>
+    {# Export Button - links to new export route, includes current search term #}
+    <a href="{{ url_for('admin.export_attendance', search_term=search_term or '') }}" class="btn btn-success">
+        Export to Excel
+    </a>
+</div>
+
+{# Search Form #}
+<form method="GET" action="{{ url_for('admin.attendance') }}" class="mb-4">
+    <div class="input-group">
+        <input type="text" class="form-control" 
+               placeholder="Search by Student Name or ID..." 
+               name="search_term" 
+               value="{{ search_term or '' }}"> {# Pre-fill search box #}
+        <button class="btn btn-outline-primary" type="submit">Search</button>
+        {# Optional: Add a clear button #}
+        {% if search_term %}
+            <a href="{{ url_for('admin.attendance') }}" class="btn btn-outline-secondary">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
 <div class="card mt-3">
     <div class="card-header bg-primary text-white">
-        <h5>Full Attendance Log</h5>
+        <h5>Full Attendance Log {% if search_term %} (Filtered by "{{ search_term }}"){% endif %}</h5>
     </div>
     <div class="card-body">
          {% if records %}
@@ -18,7 +39,7 @@
                         <th>Student ID</th>
                         <th>Name</th>
                         <th>Course</th>
-                        <th>Event</th> {# Added Event column #}
+                        <th>Event</th> 
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -30,7 +51,7 @@
                         <td>{{ record['student_id'] }}</td>
                         <td>{{ record['name'] }}</td>
                         <td>{{ record['course'] | default('N/A') }}</td>
-                        <td>{{ record['event_name'] | default('N/A') }}</td> {# Display event name #}
+                        <td>{{ record['event_name'] | default('N/A') }}</td> 
                         <td><span class="badge bg-success">{{ record['status'] }}</span></td>
                     </tr>
                     {% endfor %}
@@ -38,7 +59,12 @@
             </table>
         </div>
          {% else %}
-        <p class="text-muted">No attendance records found.</p>
+         {# Show different message if filtering resulted in no matches #}
+         {% if search_term %}
+             <p class="text-muted">No attendance records found matching "{{ search_term }}".</p>
+         {% else %}
+             <p class="text-muted">No attendance records found yet.</p>
+         {% endif %}
         {% endif %}
     </div>
 </div>
