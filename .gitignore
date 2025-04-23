@@ -13,7 +13,6 @@ build/
 
 # FastAPI specific
 instance/
-*.db
 *.sqlite3
 
 # Environment variables
